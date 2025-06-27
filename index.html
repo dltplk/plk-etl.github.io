@@ -1,21 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-  <meta charset="utf-8">
-  <title>ระบบสมัครใบอนุญาต</title>
+  <meta charset="UTF-8">
+  <title>ลงทะเบียนใบอนุญาตขนส่ง</title>
   <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+  <style>
+    body {
+      font-family: 'Tahoma', sans-serif;
+      max-width: 480px;
+      margin: auto;
+      padding: 20px;
+      background: #f4f7f8;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+    }
+    h2 {
+      text-align: center;
+      color: #0066cc;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px;
+      width: 100%;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #28a745;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .msg {
+      margin-top: 15px;
+      font-size: 16px;
+      text-align: center;
+    }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
 </head>
 <body>
-  <h2>ลงทะเบียนข้อมูลใบอนุญาตประกอบการขนส่งผ่าน LINE</h2>
-  <button id="btnLogin">Login ด้วย LINE</button>
-  <div id="form" style="display:none;">
-    <p>LINE: <span id="displayName"></span> (<span id="userId"></span>)</p>
-    <label>เลขที่ใบอนุญาต: <input id="licenseNo"></label><br>
-    <label>เลขบัตรประชาชน/นิติบุคคล: <input id="citizenId"></label><br>
-    <label>ชื่อ-สกุล/ชื่อกิจการ: <input id="fullName"></label><br>
-    <label>ประเภทประกอบการ:
-      <select id="businessType">
-        <option value="รถบรรทุกส่วนบุคคล (80)">1. ใบอนุญาตรถบรรทุกส่วนบุคคล (80)</option>
+  <h2>ลงทะเบียนข้อมูลใบอนุญาต</h2>
+
+  <div id="userInfo" style="display:none;">
+    👤 <span id="displayName"></span><br>
+    🆔 <span id="userId"></span>
+  </div>
+
+  <form id="registerForm">
+    <label>เลขที่ใบอนุญาต:</label>
+    <input type="text" id="licenseNo" required>
+
+    <label>เลขบัตรประชาชน/นิติบุคคล:</label>
+    <input type="text" id="citizenId" required>
+
+    <label>ชื่อ-สกุล/ชื่อกิจการ:</label>
+    <input type="text" id="fullName" required>
+
+    <label>ประเภทประกอบการ:</label>
+    <select id="businessType">
+<option value="">กรุณาเลือกประเภทใบอนุญาตประกอบการ</option>
+    <option value="รถบรรทุกส่วนบุคคล (80)">1. ใบอนุญาตรถบรรทุกส่วนบุคคล (80)</option>
         <option value="รถบรรทุกไม่ประจำทาง (70)">2. ใบอนุญาตรถบรรทุกไม่ประจำทาง (70)</option>
         <option value="รถโดยสารส่วนบุคคล (40)">3. ใบอนุญาตรถโดยสารส่วนบุคคล (40)</option>
         <option value="รถโดยสารไม่ประจำทาง (30)">4. ใบอนุญาตรถโดยสารไม่ประจำทาง (30)</option>
@@ -23,60 +81,65 @@
         <option value="รถบรรทุกส่วนบุคคล (80 ระหว่างประเทศ)">6. ใบอนุญาตรถบรรทุกส่วนบุคคล (80 ระหว่างประเทศ)</option>
         <option value="รถบรรทุกไม่ประจำทาง (70 ระหว่างประเทศ)">7. ใบอนุญาตรถบรรทุกไม่ประจำทาง (70 ระหว่างประเทศ)</option>
         <option value="รถโดยสารไม่ประจำทาง (30 ระหว่างประเทศ)">8. ใบอนุญาตรถโดยสารไม่ประจำทาง (30 ระหว่างประเทศ)</option>
-      </select>
-    </label><br>
-    <label>วันที่อนุญาต: <input id="approveDate" type="date"></label><br>
-    <label>วันหมดอายุ: <input id="expireDate" type="date"></label><br>
-    <button id="btnSubmit">ส่งข้อมูล</button>
-  </div>
-  <div id="msg"></div>
+    </select>
+
+    <label>วันที่อนุญาต:</label>
+    <input type="date" id="approveDate" required>
+
+    <label>วันหมดอายุ:</label>
+    <input type="date" id="expireDate" required>
+
+    <button type="submit">✅ ส่งข้อมูล</button>
+    <div class="msg" id="msg"></div>
+  </form>
+
   <script>
     const liffId = "2007647972-rZOy6klP";
-    const postUrl = "https://script.google.com/macros/s/AKfycbwjHU4EeiwTPpHlJRLuF1FRHMLGViWXaQooYDo55tOCRmiapGOQ39367pUUy0YkWRrmYQ/exec?action=register";
+    const postUrl = "https://script.google.com/macros/s/AKfycbwjHU4EeiwTPpHlJRLuF1FRHMLGViWXaQooYDo55tOCRmiapGOQ39367pUUy0YkWRrmYQ/exec";
 
     async function init() {
       await liff.init({ liffId });
-      if (liff.isLoggedIn()) {
-        showForm();
+      if (!liff.isLoggedIn()) {
+        liff.login();
       } else {
-        document.getElementById("btnLogin").addEventListener("click", () => liff.login());
+        const profile = await liff.getProfile();
+        document.getElementById("displayName").textContent = profile.displayName;
+        document.getElementById("userId").textContent = profile.userId;
+        document.getElementById("userInfo").style.display = "block";
       }
-      document.getElementById("btnSubmit").addEventListener("click", sendData);
     }
 
-    async function showForm() {
-      const profile = await liff.getProfile();
-      document.getElementById("displayName").textContent = profile.displayName;
-      document.getElementById("userId").textContent = profile.userId;
-      document.getElementById("form").style.display = "block";
-      document.getElementById("btnLogin").style.display = "none";
-    }
-
-    async function sendData() {
-      const o = id => document.getElementById(id).value;
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
       const payload = {
         action: "register",
-        licenseNo: o("licenseNo"),
-        citizenId: o("citizenId"),
-        fullName: o("fullName"),
-        businessType: o("businessType"),
-        approveDate: o("approveDate"),
-        expireDate: o("expireDate"),
+        licenseNo: document.getElementById("licenseNo").value,
+        citizenId: document.getElementById("citizenId").value,
+        fullName: document.getElementById("fullName").value,
+        businessType: document.getElementById("businessType").value,
+        approveDate: document.getElementById("approveDate").value,
+        expireDate: document.getElementById("expireDate").value,
         userId: document.getElementById("userId").textContent,
         displayName: document.getElementById("displayName").textContent
       };
 
       try {
-        const resp = await fetch(postUrl, {
+        const res = await fetch(postUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        document.getElementById("msg").textContent = resp.ok ? "✅ ลงทะเบียนเรียบร้อยแล้ว" : "❌ ไม่สำเร็จ";
+        const text = await res.text();
+        document.getElementById("msg").textContent = text.includes("OK") 
+          ? "✅ บันทึกสำเร็จ" 
+          : "❌ เกิดข้อผิดพลาด: " + text;
+        document.getElementById("msg").className = text.includes("OK") ? "msg success" : "msg error";
       } catch (err) {
-        document.getElementById("msg").textContent = "❌ ข้อผิดพลาด: " + err;
+        document.getElementById("msg").textContent = "❌ เกิดข้อผิดพลาดในการเชื่อมต่อ";
+        document.getElementById("msg").className = "msg error";
       }
-    }
+    });
+
     init();
   </script>
 </body>
