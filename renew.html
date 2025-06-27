@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ยืนยันการต่ออายุ</title>
+  <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+</head>
+<body>
+  <h2>ยืนยันการต่ออายุใบอนุญาต</h2>
+  <button id="btnLogin">Login ด้วย LINE</button>
+  <div id="form" style="display:none;">
+    <p>LINE: <span id="displayName"></span> (<span id="userId"></span>)</p>
+    <label>เลขที่ใบอนุญาต: <input id="licenseNo"></label><br>
+    <label>วันที่อนุญาต: <input id="approveDate" type="date"></label><br>
+    <label>วันหมดอายุ: <input id="expireDate" type="date"></label><br><br>
+    <button id="btnRenew">✅ ยืนยันว่าต่ออายุแล้ว</button>
+    <p id="msg"></p>
+  </div>
+  <script>
+    const liffId = "2007647972-rZOy6klP";
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbwZSc8yjl8zdAaGNS8D5JYNByoIcrYk4vAKr6wL7_A-1djfvE47eS-dlITboQmEhVclfw/exec";
+    const fetchUrl = scriptUrl + "?action=fetch";
+    const updateUrl = scriptUrl + "?action=update";
+
+    async function init() {
+      await liff.init({ liffId });
+      if (liff.isLoggedIn()) {
+        showForm();
+      } else {
+        document.getElementById("btnLogin").addEventListener("click", () => liff.login());
+      }
+      document.getElementById("btnRenew").addEventListener("click", sendUpdate);
+    }
+
+    async function showForm() {
+      const profile = await liff.getProfile();
+      const userId = profile.userId;
+      const displayName = profile.displayName;
+      document.getElementById("displayName").textContent = displayName;
+      document.getElementById("userId").textContent = userId;
+      document.getElementById("form").style.display = "block";
+      document.getElementById("btnLogin").style.display = "none";
+      const res = await fetch(fetchUrl + "&userId=" + userId);
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById("licenseNo").value = data.licenseNo;
+        document.getElementById("approveDate").value = data.approveDate;
+        document.getElementById("expireDate").value = data.expireDate;
+      }
+    }
+
+    async function sendUpdate() {
+      const payload = {
+        userId: document.getElementById("userId").textContent,
+        licenseNo: document.getElementById("licenseNo").value,
+        approveDate: document.getElementById("approveDate").value,
+        expireDate: document.getElementById("expireDate").value
+      };
+      const res = await fetch(updateUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const text = await res.text();
+      document.getElementById("msg").textContent = text.includes("OK") ? "✅ บันทึกการต่ออายุแล้ว" : "❌ บันทึกผิดพลาด";
+    }
+    init();
+  </script>
+</body>
+</html>
