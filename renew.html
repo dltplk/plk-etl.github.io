@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -9,6 +8,7 @@
 <body>
   <h2>ยืนยันการต่ออายุใบอนุญาต</h2>
   <button id="btnLogin">Login ด้วย LINE</button>
+
   <div id="form" style="display:none;">
     <p>LINE: <span id="displayName"></span> (<span id="userId"></span>)</p>
     <label>เลขที่ใบอนุญาต: <input id="licenseNo"></label><br>
@@ -17,6 +17,7 @@
     <button id="btnRenew">✅ ยืนยันว่าต่ออายุแล้ว</button>
     <p id="msg"></p>
   </div>
+
   <script>
     const liffId = "2007647972-rZOy6klP";
     const scriptUrl = "https://script.google.com/macros/s/AKfycbyqmGB1JsM83d3uTrI68CUuGDWjcDXC5SrQ24OPfvdK6pGFSpXA1MilL-wEZxXV2HB6nw/exec";
@@ -34,19 +35,25 @@
     }
 
     async function showForm() {
-      const profile = await liff.getProfile();
-      const userId = profile.userId;
-      const displayName = profile.displayName;
-      document.getElementById("displayName").textContent = displayName;
-      document.getElementById("userId").textContent = userId;
-      document.getElementById("form").style.display = "block";
-      document.getElementById("btnLogin").style.display = "none";
-      const res = await fetch(fetchUrl + "&userId=" + userId);
-      const data = await res.json();
-      if (data.success) {
-        document.getElementById("licenseNo").value = data.licenseNo;
-        document.getElementById("approveDate").value = data.approveDate;
-        document.getElementById("expireDate").value = data.expireDate;
+      try {
+        const profile = await liff.getProfile();
+        const userId = profile.userId;
+        const displayName = profile.displayName;
+        document.getElementById("displayName").textContent = displayName;
+        document.getElementById("userId").textContent = userId;
+        document.getElementById("form").style.display = "block";
+        document.getElementById("btnLogin").style.display = "none";
+
+        const res = await fetch(fetchUrl + "&userId=" + userId, { mode: "cors" });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById("licenseNo").value = data.licenseNo;
+          document.getElementById("approveDate").value = data.approveDate;
+          document.getElementById("expireDate").value = data.expireDate;
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        document.getElementById("msg").textContent = "❌ ไม่สามารถโหลดข้อมูลได้";
       }
     }
 
@@ -55,16 +62,29 @@
         userId: document.getElementById("userId").textContent,
         licenseNo: document.getElementById("licenseNo").value,
         approveDate: document.getElementById("approveDate").value,
-        expireDate: document.getElementById("expireDate").value
+        expireDate: document.getElementById("expireDate").value,
+        action: "update"
       };
-      const res = await fetch(updateUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const text = await res.text();
-      document.getElementById("msg").textContent = text.includes("OK") ? "✅ บันทึกการต่ออายุแล้ว" : "❌ บันทึกผิดพลาด";
+
+      try {
+        const res = await fetch(updateUrl, {
+          method: "POST",
+          mode: "cors", // ✅ สำคัญ
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+        const text = await res.text();
+        document.getElementById("msg").textContent = text.includes("OK")
+          ? "✅ บันทึกการต่ออายุแล้ว"
+          : "❌ บันทึกผิดพลาด: " + text;
+      } catch (err) {
+        console.error("Update error:", err);
+        document.getElementById("msg").textContent = "❌ ส่งข้อมูลล้มเหลว";
+      }
     }
+
     init();
   </script>
 </body>
