@@ -1,9 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>DLTPLK</title>
+  <meta charset="utf-8">
+  <title>ระบบสมัครใบอนุญาต</title>
+  <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
 </head>
 <body>
-  <h1>ยินดีต้อนรับสู่เว็บไซต์ DLTPLK</h1>
+  <h2>ลงทะเบียนข้อมูลใบอนุญาตประกอบการขนส่งผ่าน LINE</h2>
+  <button id="btnLogin">Login ด้วย LINE</button>
+  <div id="form" style="display:none;">
+    <p>LINE: <span id="displayName"></span> (<span id="userId"></span>)</p>
+    <label>เลขที่ใบอนุญาต: <input id="licenseNo"></label><br>
+    <label>เลขบัตรประชาชน/นิติบุคคล: <input id="citizenId"></label><br>
+    <label>ชื่อ-สกุล/ชื่อกิจการ: <input id="fullName"></label><br>
+    <label>ประเภทประกอบการ:
+      <select id="businessType">
+        <option value="รถบรรทุกส่วนบุคคล (80)">1. ใบอนุญาตรถบรรทุกส่วนบุคคล (80)</option>
+        <option value="รถบรรทุกไม่ประจำทาง (70)">2. ใบอนุญาตรถบรรทุกไม่ประจำทาง (70)</option>
+        <option value="รถโดยสารส่วนบุคคล (40)">3. ใบอนุญาตรถโดยสารส่วนบุคคล (40)</option>
+        <option value="รถโดยสารไม่ประจำทาง (30)">4. ใบอนุญาตรถโดยสารไม่ประจำทาง (30)</option>
+        <option value="รถโดยสารประจำทาง (10)">5. ใบอนุญาตรถโดยสารประจำทาง (10)</option>
+        <option value="รถบรรทุกส่วนบุคคล (80 ระหว่างประเทศ)">6. ใบอนุญาตรถบรรทุกส่วนบุคคล (80 ระหว่างประเทศ)</option>
+        <option value="รถบรรทุกไม่ประจำทาง (70 ระหว่างประเทศ)">7. ใบอนุญาตรถบรรทุกไม่ประจำทาง (70 ระหว่างประเทศ)</option>
+        <option value="รถโดยสารไม่ประจำทาง (30 ระหว่างประเทศ)">8. ใบอนุญาตรถโดยสารไม่ประจำทาง (30 ระหว่างประเทศ)</option>
+      </select>
+    </label><br>
+    <label>วันที่อนุญาต: <input id="approveDate" type="date"></label><br>
+    <label>วันหมดอายุ: <input id="expireDate" type="date"></label><br>
+    <button id="btnSubmit">ส่งข้อมูล</button>
+  </div>
+  <div id="msg"></div>
+  <script>
+    const liffId = "2007647972-rZOy6klP";
+    const postUrl = "https://script.google.com/macros/s/AKfycbwZSc8yjl8zdAaGNS8D5JYNByoIcrYk4vAKr6wL7_A-1djfvE47eS-dlITboQmEhVclfw/exec?action=register";
+
+    async function init() {
+      await liff.init({ liffId });
+      if (liff.isLoggedIn()) {
+        showForm();
+      } else {
+        document.getElementById("btnLogin").addEventListener("click", () => liff.login());
+      }
+      document.getElementById("btnSubmit").addEventListener("click", sendData);
+    }
+
+    async function showForm() {
+      const profile = await liff.getProfile();
+      document.getElementById("displayName").textContent = profile.displayName;
+      document.getElementById("userId").textContent = profile.userId;
+      document.getElementById("form").style.display = "block";
+      document.getElementById("btnLogin").style.display = "none";
+    }
+
+    async function sendData() {
+      const o = id => document.getElementById(id).value;
+      const payload = {
+        action: "register",
+        licenseNo: o("licenseNo"),
+        citizenId: o("citizenId"),
+        fullName: o("fullName"),
+        businessType: o("businessType"),
+        approveDate: o("approveDate"),
+        expireDate: o("expireDate"),
+        userId: document.getElementById("userId").textContent,
+        displayName: document.getElementById("displayName").textContent
+      };
+
+      try {
+        const resp = await fetch(postUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        document.getElementById("msg").textContent = resp.ok ? "✅ ลงทะเบียนเรียบร้อยแล้ว" : "❌ ไม่สำเร็จ";
+      } catch (err) {
+        document.getElementById("msg").textContent = "❌ ข้อผิดพลาด: " + err;
+      }
+    }
+    init();
+  </script>
 </body>
 </html>
